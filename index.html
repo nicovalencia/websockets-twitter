@@ -1,0 +1,121 @@
+<!doctype html>
+<head>
+  <title>Socket.io - Twitter</title>
+  <link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
+  <style>
+
+    h1 {
+      padding: 20px;
+    }
+
+    .form-stacked {
+      margin-bottom: 10px;
+    }
+
+    #main ul {
+      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding: 20px;
+    }
+
+    #main ul li {
+      list-style: none;
+      float: left; clear: both;
+    }
+
+    p {
+      float: left;
+      padding: 20px;
+      font-size: 18px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div id="container">
+    <header>
+      <h1>Socket.io - Twitter</h1>
+    </header>
+    <div id="main" role="main">
+      <div class="form-stacked">
+        <label>Query:</label>
+        <input id="query" />
+      </div>
+      <div class="form-stacked">
+        <label>Interval:</label>
+        <input id="interval" value="10" />
+      </div>
+      <ul class="media-grid"></ul>
+    </div>
+  </div> <!--! end of #container -->
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="text/javascript">
+
+    (function(window){
+
+      var Client = {
+
+        last_from_user: '',
+
+        init: function () {
+
+          Client.socket = io.connect('http://localhost');
+
+          Client.socket.on('twitter_feed', function (data) {
+            Client.writeTweets( data );
+          });
+
+        },
+
+        writeTweets: function ( tweets ) {
+
+          var main_list = $( '#main ul' );
+
+          if ( tweets == null ) return;
+
+          $.each( tweets, function( i, tweet ) {
+
+            if ( tweet.from_user == Client.last_from_user ) return;
+            Client.last_from_user = tweet.from_user;
+
+            if ( typeof console !== "undefined" ) console.log( "Server Emitted Data: ", tweet );
+
+            var tweet_message = '<a href="http://twitter.com/'+tweet.from_user+'"><img class="thumbnail" src="'+tweet.profile_image_url+'" /></a><p><strong>'+tweet.from_user+'</strong>: '+tweet.text+'</p>',
+            tweet_obj = $( '<li/>', { html: tweet_message } );
+            main_list.prepend( tweet_obj );
+
+          });
+
+          var list_items = main_list.find( 'li' );
+          if ( list_items.length > 5 ) {
+            list_items.last().remove();
+          }
+
+        }
+
+      };
+
+      $( '#query' ).live( 'change', function ( e ) {
+        var query = $(this).val();
+        Client.socket.emit('change_query', query);
+      });
+
+      $( '#interval' ).live( 'change', function ( e ) {
+        var interval = $(this).val();
+        Client.socket.emit('change_interval', interval);
+      });
+
+      window.Client = Client;
+
+      $( document ).ready( Client.init );
+
+    })(this);
+
+  </script>
+
+</body>
+</html>
